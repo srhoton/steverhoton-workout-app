@@ -182,6 +182,32 @@ resource "aws_iam_role_policy" "codebuild_policy" {
   })
 }
 
+# Attach AWS managed policies for full access to required services
+resource "aws_iam_role_policy_attachment" "codebuild_lambda_full_access" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSLambda_FullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "codebuild_cloudfront_full_access" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudFrontFullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "codebuild_cloudwatch_full_access" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchFullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "codebuild_s3_full_access" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "codebuild_appsync_full_access" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSAppSyncAdministrator"
+}
+
 # CodeBuild project for GitHub Actions runner
 resource "aws_codebuild_project" "workout_app_runner" {
   name          = var.codebuild_project_name
