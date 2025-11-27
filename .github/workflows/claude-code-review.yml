@@ -19,7 +19,7 @@ jobs:
     #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
 
     runs-on:
-      - codebuild-workout-app-runner-${{ github.run_id }}-${{ github.run_attempt }}
+      - codebuild-steverhoton-workout-app-runner-${{ github.run_id }}-${{ github.run_attempt }}
     permissions:
       contents: read
       pull-requests: read
