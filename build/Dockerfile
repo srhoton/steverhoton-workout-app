@@ -42,6 +42,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.9-venv \
     python3.9-dev \
     java-21-amazon-corretto-jdk \
+    jq \
     && \
     # Cleanup apt cache
     rm -rf /var/lib/apt/lists/*
@@ -85,7 +86,8 @@ RUN echo "=== Verifying installations ===" \
     && git --version \
     && java --version \
     && gradle --version \
-    && tofu --version
+    && tofu --version \
+    && jq --version
 
 # Set working directory
 WORKDIR /workspace
