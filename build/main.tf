@@ -214,6 +214,7 @@ resource "aws_codebuild_project" "workout_app_runner" {
   description   = "CodeBuild runner project for ${var.github_repo}"
   build_timeout = var.build_timeout
   service_role  = aws_iam_role.codebuild_role.arn
+  project_visibility = "PRIVATE"
 
   artifacts {
     type = "NO_ARTIFACTS"
@@ -241,5 +242,18 @@ resource "aws_codebuild_project" "workout_app_runner" {
 
   tags = {
     Name = var.codebuild_project_name
+  }
+}
+
+# Webhook for GitHub Actions runner - listens for workflow job events
+resource "aws_codebuild_webhook" "workout_app_runner_webhook" {
+  project_name = aws_codebuild_project.workout_app_runner.name
+  build_type   = "BUILD"
+
+  filter_group {
+    filter {
+      type    = "EVENT"
+      pattern = "WORKFLOW_JOB_QUEUED"
+    }
   }
 }
