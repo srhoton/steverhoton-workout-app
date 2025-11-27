@@ -1,0 +1,24 @@
+# Example Terraform Variables File
+# Copy this file to terraform.tfvars and customize as needed
+
+# AWS Configuration
+aws_region  = "us-west-2"
+bucket_name = "steverhoton-workout-app"
+
+# Tagging
+environment  = "production"
+project_name = "steverhoton-workout-app"
+owner        = "steverhoton"
+cost_center  = "engineering"
+
+# S3 Configuration
+enable_versioning    = true
+enable_encryption    = true
+block_public_access  = true
+force_destroy        = false
+
+# Lifecycle Rules (optional - uncomment to enable)
+# lifecycle_rules_enabled   = true
+# transition_to_ia_days     = 90
+# transition_to_glacier_days = 180
+# expiration_days           = 365
