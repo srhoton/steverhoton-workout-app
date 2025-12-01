@@ -5,6 +5,14 @@ resource "aws_cloudfront_origin_access_control" "site_oac" {
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name        = "${local.bucket_name}-oac"
+      Description = "Origin Access Control for S3 bucket"
+    }
+  )
 }
 
 # CloudFront distribution for the workout app
