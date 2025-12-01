@@ -98,3 +98,54 @@ variable "force_destroy" {
   type        = bool
   default     = false
 }
+
+variable "cloudfront_price_class" {
+  description = "CloudFront distribution price class (PriceClass_All, PriceClass_200, PriceClass_100)"
+  type        = string
+  default     = "PriceClass_100"
+
+  validation {
+    condition     = contains(["PriceClass_All", "PriceClass_200", "PriceClass_100"], var.cloudfront_price_class)
+    error_message = "Price class must be one of: PriceClass_All, PriceClass_200, PriceClass_100."
+  }
+}
+
+variable "cloudfront_cache_policy_id" {
+  description = "CloudFront managed cache policy ID (default: CachingOptimized)"
+  type        = string
+  default     = "658327ea-f89d-4fab-a63d-7e88639e58f6"
+}
+
+variable "cloudfront_origin_request_policy_id" {
+  description = "CloudFront managed origin request policy ID (default: CORS-S3Origin)"
+  type        = string
+  default     = "88a5eaf4-2fd4-4709-b370-b4c650ea3fcf"
+}
+
+variable "enable_spa_error_handling" {
+  description = "Enable custom error responses for single-page application routing"
+  type        = bool
+  default     = true
+}
+
+variable "cloudfront_geo_restriction_type" {
+  description = "Type of geographic restriction (none, whitelist, blacklist)"
+  type        = string
+  default     = "none"
+
+  validation {
+    condition     = contains(["none", "whitelist", "blacklist"], var.cloudfront_geo_restriction_type)
+    error_message = "Geo restriction type must be one of: none, whitelist, blacklist."
+  }
+}
+
+variable "cloudfront_geo_restriction_locations" {
+  description = "List of country codes for geographic restriction"
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for loc in var.cloudfront_geo_restriction_locations : can(regex("^[A-Z]{2}$", loc))])
+    error_message = "Location codes must be two-letter ISO 3166-1-alpha-2 country codes (e.g., US, GB, CA)."
+  }
+}
