@@ -140,7 +140,7 @@ variable "cloudfront_geo_restriction_type" {
 }
 
 variable "cloudfront_geo_restriction_locations" {
-  description = "List of country codes for geographic restriction"
+  description = "List of country codes for geographic restriction. Required when cloudfront_geo_restriction_type is whitelist or blacklist, must be empty when type is none"
   type        = list(string)
   default     = []
 
