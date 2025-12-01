@@ -1,16 +1,26 @@
-# S3 Bucket Infrastructure for Workout App
+# S3 Bucket and CloudFront Infrastructure for Workout App
 
-This OpenTofu/Terraform configuration creates and manages an S3 bucket for hosting the Workout App site code with industry-standard security best practices.
+This OpenTofu/Terraform configuration creates and manages an S3 bucket and CloudFront distribution for hosting the Workout App with industry-standard security best practices.
 
 ## Overview
 
-This infrastructure as code (IaC) project provisions a secure S3 bucket in AWS with the following features:
+This infrastructure as code (IaC) project provisions a secure S3 bucket and CloudFront CDN in AWS with the following features:
 
+### S3 Bucket Features
 - **Encryption**: Server-side encryption (AES256) enabled by default
 - **Versioning**: Object versioning enabled to protect against accidental deletion
 - **Public Access**: All public access blocked for security
 - **Lifecycle Management**: Automatic transition of old versions to cheaper storage and expiration
 - **Ownership Controls**: Bucket owner enforced for consistent permissions
+
+### CloudFront Features
+- **Origin Access Control (OAC)**: Modern, secure access to S3 bucket (replaces deprecated OAI)
+- **HTTPS Enforcement**: All HTTP requests redirected to HTTPS
+- **IPv6 Support**: Full IPv6 compatibility enabled
+- **Caching**: Optimized caching with AWS managed cache policies
+- **Compression**: Automatic compression for faster delivery
+- **SPA Support**: Custom error handling for single-page applications
+- **Cost Optimization**: PriceClass_100 for North America and Europe edge locations
 
 ## Prerequisites
 
@@ -58,15 +68,22 @@ tofu destroy
 
 ### Resources Created
 
+#### S3 Resources
 - **aws_s3_bucket**: Main S3 bucket for hosting site code
 - **aws_s3_bucket_versioning**: Versioning configuration
 - **aws_s3_bucket_server_side_encryption_configuration**: Encryption settings
 - **aws_s3_bucket_public_access_block**: Public access blocking
 - **aws_s3_bucket_lifecycle_configuration**: Lifecycle rules for cost optimization
 - **aws_s3_bucket_ownership_controls**: Ownership enforcement
+- **aws_s3_bucket_policy**: Bucket policy allowing CloudFront OAC access
+
+#### CloudFront Resources
+- **aws_cloudfront_origin_access_control**: Origin Access Control for secure S3 access
+- **aws_cloudfront_distribution**: CDN distribution for content delivery
 
 ### Security Features
 
+#### S3 Security
 1. **Encryption at Rest**: All objects are encrypted using AES256
 2. **Public Access Blocking**: Four-layer protection against public exposure:
    - Block public ACLs
@@ -75,6 +92,13 @@ tofu destroy
    - Restrict public buckets
 3. **Versioning**: Enabled to protect against accidental deletion or modification
 4. **Bucket Key**: Enabled to reduce encryption costs
+
+#### CloudFront Security
+1. **Origin Access Control (OAC)**: Uses AWS SigV4 signing for secure S3 access
+2. **HTTPS Enforcement**: Viewer protocol policy set to redirect-to-https
+3. **TLS 1.2 Minimum**: Uses TLSv1.2_2021 as minimum protocol version
+4. **IAM-based Access**: Bucket policy restricts access to specific CloudFront distribution
+5. **No Direct S3 Access**: S3 bucket remains private, accessible only via CloudFront
 
 ### Cost Optimization
 
@@ -105,6 +129,12 @@ None - all variables have sensible defaults.
 | `noncurrent_version_transition_days` | Days until transition to STANDARD_IA | `30` | >= 30 |
 | `noncurrent_version_expiration_days` | Days until version expiration | `90` | >= 1 |
 | `force_destroy` | Allow bucket destruction with objects | `false` | Boolean |
+| `cloudfront_price_class` | CloudFront distribution price class | `PriceClass_100` | PriceClass_All, PriceClass_200, PriceClass_100 |
+| `cloudfront_cache_policy_id` | CloudFront managed cache policy ID | `658327ea-f89d-4fab-a63d-7e88639e58f6` | Valid policy ID |
+| `cloudfront_origin_request_policy_id` | CloudFront origin request policy ID | `88a5eaf4-2fd4-4709-b370-b4c650ea3fcf` | Valid policy ID |
+| `enable_spa_error_handling` | Enable SPA custom error responses | `true` | Boolean |
+| `cloudfront_geo_restriction_type` | Geographic restriction type | `none` | none, whitelist, blacklist |
+| `cloudfront_geo_restriction_locations` | Country codes for geo restriction | `[]` | ISO 3166-1-alpha-2 codes |
 
 ### Example Custom Configuration
 
@@ -126,6 +156,7 @@ noncurrent_version_expiration_days = 180
 
 ## Outputs
 
+### S3 Outputs
 | Output | Description |
 |--------|-------------|
 | `bucket_id` | The ID (name) of the S3 bucket |
@@ -135,6 +166,63 @@ noncurrent_version_expiration_days = 180
 | `bucket_region` | The AWS region of the bucket |
 | `versioning_enabled` | Whether versioning is enabled |
 | `encryption_algorithm` | The encryption algorithm used |
+
+### CloudFront Outputs
+| Output | Description |
+|--------|-------------|
+| `cloudfront_distribution_id` | The ID of the CloudFront distribution |
+| `cloudfront_distribution_arn` | The ARN of the CloudFront distribution |
+| `cloudfront_domain_name` | The domain name for accessing content via CloudFront |
+| `cloudfront_hosted_zone_id` | The Route 53 zone ID for alias records |
+| `cloudfront_status` | Current deployment status of the distribution |
+| `cloudfront_oac_id` | The ID of the Origin Access Control |
+
+## Usage
+
+### Accessing Your Content
+
+After applying the configuration, your content will be accessible via CloudFront:
+
+1. Get the CloudFront domain name:
+```bash
+tofu output cloudfront_domain_name
+```
+
+2. Access your site at: `https://<cloudfront-domain-name>/`
+
+3. Upload files to S3 (they will be served through CloudFront):
+```bash
+aws s3 cp index.html s3://$(tofu output -raw bucket_id)/
+```
+
+### Invalidating CloudFront Cache
+
+When you update content in S3, you may need to invalidate the CloudFront cache:
+
+```bash
+# Invalidate all files
+aws cloudfront create-invalidation \
+  --distribution-id $(tofu output -raw cloudfront_distribution_id) \
+  --paths "/*"
+
+# Invalidate specific files
+aws cloudfront create-invalidation \
+  --distribution-id $(tofu output -raw cloudfront_distribution_id) \
+  --paths "/index.html" "/styles.css"
+```
+
+### Price Class Information
+
+The default `PriceClass_100` includes edge locations in:
+- United States
+- Canada
+- Europe
+- Israel
+
+To use all edge locations worldwide, set:
+```hcl
+cloudfront_price_class = "PriceClass_All"
+```
 
 ## State Management
 
@@ -230,12 +318,24 @@ tofu apply -var="bucket_name=your-unique-bucket-name"
 ### Permission Issues
 
 Ensure your AWS credentials have the following permissions:
+
+#### S3 Permissions
 - `s3:CreateBucket`
 - `s3:PutBucketVersioning`
 - `s3:PutEncryptionConfiguration`
 - `s3:PutBucketPublicAccessBlock`
 - `s3:PutLifecycleConfiguration`
 - `s3:PutBucketOwnershipControls`
+- `s3:PutBucketPolicy`
+
+#### CloudFront Permissions
+- `cloudfront:CreateDistribution`
+- `cloudfront:GetDistribution`
+- `cloudfront:UpdateDistribution`
+- `cloudfront:DeleteDistribution`
+- `cloudfront:CreateOriginAccessControl`
+- `cloudfront:GetOriginAccessControl`
+- `cloudfront:DeleteOriginAccessControl`
 
 ## Maintenance
 
