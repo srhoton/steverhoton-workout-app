@@ -1,0 +1,19 @@
+Session Prompts:
+
+User: Can you merge changes from main into this branch?
+
+User: ok, now, in the github actions that were setup for claude, could you make it so it works with the codebuild functionality? Specifically, we should have a clause like this:
+name: Hello World
+on: [push]
+jobs:
+  Hello-World-Job:
+    runs-on:
+      - codebuild-myProject-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - run: echo "Hello World!"
+
+AWS Documentation for this is here: https://docs.aws.amazon.com/codebuild/latest/userguide/action-runner.html
+
+User: ok, now, we need to check on the role the runner runs under. Can we make sure it has full access to Lambda, Cloudfront, Cloudwatch, S3, and appsync?
+
+User: ok. Please commit your work, add prompts in this session to the commit via git notes, push it, and using your github mcp integration, create a PR.

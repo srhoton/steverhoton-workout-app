@@ -1,0 +1,17 @@
+Session Prompts:
+
+1. User: Build a Dockerfile for CI/CD build image with Node.js LTS, Python 3.9, uv, git, Java 21 Corretto with Gradle, and OpenTofu latest.
+
+2. User: Write OpenTofu to create ECR repository, use S3 backend in srhoton-tfstate bucket (us-east-1), no DynamoDB locking.
+
+3. User: Apply the OpenTofu configuration.
+
+4. User: Authenticate, tag, and push the Docker image to ECR.
+
+5. User: Add CodeBuild project for GitHub runner using the ECR image we created.
+
+6. User: Apply the CodeBuild configuration.
+
+7. User: (After code review) Add checksum verification, ECR repository policy, and fix multiple apt-get operations.
+
+8. User: Commit work, add prompts via git notes, push, and create PR.
