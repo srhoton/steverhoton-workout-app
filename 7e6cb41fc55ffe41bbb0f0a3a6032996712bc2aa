@@ -1,0 +1,12 @@
+Session prompts:
+- User asked to review the peloton directory tool
+- User asked to run the tool
+- User provided credentials: PELOTON_USERNAME=sprhoto@gmail.com
+- User asked to fix pylotoncycle library to work with current Peloton API
+- User asked to commit, add git notes with prompts, push, and create PR
+
+Key findings:
+- pylotoncycle GetRecentWorkouts() crashes on workouts with instructor_id=None (tries /api/instructor/None)
+- Peloton API no longer returns avg_watts/avg_resistance/avg_cadence as top-level fields
+- Performance graph data is available via GetWorkoutMetricsById(workout_id, frequency=0)
+- GetRecentWorkouts() times out because it fetches 50Hz per-sample data for every workout
