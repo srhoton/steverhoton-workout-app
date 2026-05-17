@@ -25,6 +25,37 @@ def get_credentials() -> tuple[str, str]:
     return username, password
 
 
+def _extract_metrics(metrics_data: dict[str, Any] | None) -> dict[str, float]:
+    """Extract avg watts, resistance, and cadence from average_summaries.
+
+    Args:
+        metrics_data: Performance graph data from GetWorkoutMetricsById.
+
+    Returns:
+        Dict with avg_watts, avg_resistance, avg_cadence keys.
+    """
+    if not metrics_data:
+        return {"avg_watts": 0.0, "avg_resistance": 0.0, "avg_cadence": 0.0}
+
+    avg_summaries = metrics_data.get("average_summaries", [])
+    result: dict[str, float] = {"avg_watts": 0.0, "avg_resistance": 0.0, "avg_cadence": 0.0}
+
+    for summary in avg_summaries:
+        slug = summary.get("slug", "")
+        value = summary.get("value", 0)
+        try:
+            if slug == "avg_output":
+                result["avg_watts"] = round(float(value), 1)
+            elif slug == "avg_resistance":
+                result["avg_resistance"] = round(float(value), 1)
+            elif slug == "avg_cadence":
+                result["avg_cadence"] = round(float(value), 1)
+        except (TypeError, ValueError):
+            pass
+
+    return result
+
+
 def fetch_workouts() -> list[dict[str, Any]]:
     """Fetch all cycling workouts from the Peloton API.
 
@@ -34,10 +65,10 @@ def fetch_workouts() -> list[dict[str, Any]]:
     """
     username, password = get_credentials()
     conn = pylotoncycle.PylotonCycle(username, password)
-    raw_workouts = conn.GetRecentWorkouts(num_workouts=500)
+    workout_list = conn.GetWorkoutList(num_workouts=500)
 
     workouts: list[dict[str, Any]] = []
-    for w in raw_workouts:
+    for w in workout_list:
         if w.get("fitness_discipline") != "cycling":
             continue
 
@@ -46,13 +77,27 @@ def fetch_workouts() -> list[dict[str, Any]]:
 
         total_output = w.get("total_work", 0) / 1000  # joules -> kJ
 
-        ride = w.get("ride", {}) or {}
-        duration_sec = ride.get("duration", w.get("ride", {}).get("duration", 0))
+        ride = w.get("ride") or {}
+        duration_sec = ride.get("duration", 0)
         ride_title = ride.get("title", "Unknown")
 
-        avg_resistance = _safe_float(w, "avg_resistance")
-        avg_cadence = _safe_float(w, "avg_cadence")
-        avg_watts = _safe_float(w, "avg_watts")
+        # Fetch performance metrics with frequency=0 to get only averages
+        workout_id = w.get("id")
+        metrics = {}
+        if workout_id:
+            try:
+                metrics = conn.GetWorkoutMetricsById(workout_id, frequency=0)
+            except Exception:
+                pass
+
+        avg_watts = 0.0
+        avg_resistance = 0.0
+        avg_cadence = 0.0
+        if metrics:
+            avg_data = _extract_metrics(metrics)
+            avg_watts = avg_data["avg_watts"]
+            avg_resistance = avg_data["avg_resistance"]
+            avg_cadence = avg_data["avg_cadence"]
 
         workouts.append(
             {
